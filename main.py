@@ -1,4 +1,5 @@
 import pygame
+import os
 
 FPS = 60
 white = (255,255,255)
@@ -7,8 +8,15 @@ GREY = (180, 180, 180)
 GREEN = (0, 200, 0)     # goal color
 BROWN = (160, 100, 40)   # breakable block color
 
+# Screen size
 WIDTH = 960
 HEIGHT = 540
+
+# Tile size (one char in txt = one tile)
+TILE_W = 50
+TILE_H = 50
+
+LEVEL_WIDTH = 0  # Total level width
 
 GRAVITY = 0.5
 JUMP_SPEED = -12
@@ -161,37 +169,52 @@ class Player(pygame.sprite.Sprite):
         pygame.draw.rect(surface, BLUE, draw_rect)
 
 # Scene setup
-
 platforms = []
 goal = None
 
-def build_level():
-    global platforms, goal
+def load_level_from_txt(filename):
+    # Find main.py
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    full_path = os.path.join(base_path, filename)
+
+    with open(full_path, "r") as f:
+        level_map = [line.rstrip("\n") for line in f]
+
+    return level_map
+
+def build_level_from_map(level_map):
+    global platforms, goal, LEVEL_WIDTH
+
+    rows = len(level_map)
+    cols = len(level_map[0])
+    LEVEL_WIDTH = cols * TILE_W
+
     platforms = []
+    goal = None
 
-    # ground
-    ground = Platform(0, HEIGHT - 40, LEVEL_WIDTH, 40)
-    platforms.append(ground)
+    for row_idx, row in enumerate(level_map):
+        for col_idx, ch in enumerate(row):
+            if ch == ".":
+                continue
 
-    # normal platform
-    platforms.append(Platform(300, 350, 300, 30))
-    platforms.append(Platform(800, 420, 200, 20))
-    platforms.append(Platform(1200, 380, 300, 20))
-    platforms.append(Platform(1700, 320, 300, 20))
-    platforms.append(Platform(2200, 280, 300, 20))
+            x = col_idx * TILE_W
+            y = HEIGHT - (rows - row_idx) * TILE_H 
 
-    # Some breakable bricks above the ground
-    platforms.append(BreakableBlock(600, 300, 30, 30))
-    platforms.append(BreakableBlock(700, 300, 30, 30))
-    platforms.append(BreakableBlock(800, 300, 30, 30))
+            if ch == "#":
+                platforms.append(Platform(x, y, TILE_W, TILE_H))
 
-    # final
-    goal_x = LEVEL_WIDTH - 80
-    goal_y = HEIGHT - 80
-    goal = Goal(goal_x, goal_y, 40, 40)
+            elif ch == "B":
+                platforms.append(BreakableBlock(x, y, TILE_W, TILE_H))
+
+            elif ch == "G":
+                goal_w, goal_h = TILE_W // 2, TILE_H // 2
+                goal_x = x + (TILE_W - goal_w) // 2
+                goal_y = y + (TILE_H - goal_h) // 2
+                goal = Goal(goal_x, goal_y, goal_w, goal_h)
 
 # Build level first
-build_level()
+LEVEL_MAP = load_level_from_txt("level1.txt")
+build_level_from_map(LEVEL_MAP)
 
 # Then create player and other states
 player = Player(100, 150, 50, 70)
