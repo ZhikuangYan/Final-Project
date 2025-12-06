@@ -4,6 +4,9 @@ FPS = 60
 white = (255,255,255)
 BLUE = (0,0,255)
 GREY = (180, 180, 180)
+GREEN = (0, 200, 0)     # goal color
+BROWN = (160, 100, 40)   # breakable block color
+
 WIDTH = 960
 HEIGHT = 540
 
@@ -16,87 +19,261 @@ pygame.display.set_caption("2D platform game")
 screen = pygame.display.set_mode((WIDTH,HEIGHT))
 clock = pygame.time.Clock()
 
-platforms = []
+class Platform:
+    """
+    Simple platform class: wraps a rect and draw method for future extension
+    """
+    def __init__(self, x, y, w, h, color=GREY):
+        # Note: rect.x here is in *world coordinates*, can be > WIDTH
+        self.rect = pygame.Rect(x, y, w, h)
+        self.color = color
 
-# Ground platform
-ground_rect = pygame.Rect(0, HEIGHT - 40, WIDTH, 40)
-platforms.append(ground_rect)
+    def draw(self, surface, offset_x):
+        """
+        Draw platform using camera offset
+        """
+        draw_rect = self.rect.move(-offset_x, 0)
+        pygame.draw.rect(surface, self.color, draw_rect)
 
-# Float platform
-mid_platform = pygame.Rect(300, 350, 300, 30)
-platforms.append(mid_platform)
+class BreakableBlock(Platform):
+    """
+    Breakable block that can be destroyed when hit from below
+    """
+    def __init__(self, x, y, w, h, color=BROWN):
+        super().__init__(x, y, w, h, color)
+
+class Goal:
+    """
+    Goal class: when the player touches it, game is complete
+    """
+    def __init__(self, x, y, w, h, color=GREEN):
+        self.rect = pygame.Rect(x, y, w, h)
+        self.color = color
+
+    def draw(self, surface, offset_x):
+        draw_rect = self.rect.move(-offset_x, 0)
+        pygame.draw.rect(surface, self.color, draw_rect)
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self,x,y,width,height):
+    def __init__(self, x, y, width, height):
         super().__init__()
-        self.rect = pygame.Rect(x,y,width,height)
-        self.speed_x = PLAYER_SPEED_X
-        self.v_y = 0
+        # Player rect in world coordinates
+        self.rect = pygame.Rect(x, y, width, height)
+
+        # Horizontal & vertical velocity
+        self.vx = 0
+        self.vy = 0
+
         self.on_ground = False
+
     def handle_input(self):
+        """
+        keyboard input: A/D move, SPACE jump
+        """
         keys = pygame.key.get_pressed()
+        self.vx = 0
 
-        # Move left and right
         if keys[pygame.K_a]:
-            self.rect.x -= self.speed_x
+            self.vx = -PLAYER_SPEED_X
         if keys[pygame.K_d]:
-            self.rect.x += self.speed_x
+            self.vx = PLAYER_SPEED_X
 
-        # Jump
+        # Only allow jumping when on the ground
         if keys[pygame.K_SPACE] and self.on_ground:
-            self.v_y = JUMP_SPEED
+            self.vy = JUMP_SPEED
             self.on_ground = False
 
     def apply_gravity(self):
-        # Add gravity
-        self.v_y += GRAVITY
-        if self.v_y > 20:   
-            self.v_y = 20
+        """
+        Apply gravity
+        """
+        self.vy += GRAVITY
+        if self.vy > 20:
+            self.vy = 20
 
-        self.rect.y += self.v_y
-
-    def check_collisions(self, platform_list):
+    def move_and_collide(self, platforms):
+        """
+        Core: axis-separated collision
+        1. Move in y and resolve vertical collisions (ground / head / break block)
+        2. Move in x and resolve horizontal collisions (walls)
+        """
+        
         self.on_ground = False
+        self.rect.y += self.vy
 
-        for plat in platform_list:
-            if self.rect.colliderect(plat):
-                if self.v_y > 0 and self.rect.bottom > plat.top:
-                    self.rect.bottom = plat.top
-                    self.v_y = 0
-                    self.on_ground = True
+        for plat in platforms[:]:
+            if not self.rect.colliderect(plat.rect):
+                continue
+                
+            # Falling down: land on top (both normal and breakable act as ground)
+            if self.vy > 0:
+                self.rect.bottom = plat.rect.top
+                self.vy = 0
+                self.on_ground = True
 
-    def update(self, platform_list):
-        self.handle_input()
-        self.apply_gravity()
-        self.check_collisions(platform_list)
+            # Moving up: hit platform bottom or break block
+            elif self.vy < 0:
+                # If it's a breakable block: remove it
+                if isinstance(plat, BreakableBlock):
+                    platforms.remove(plat)
+                    self.vy = 0
+                else:
+                    # Normal platform: block the head
+                    self.rect.top = plat.rect.bottom
+                    self.vy = 0
 
+        self.rect.x += self.vx
+
+        for plat in platforms:
+            if not self.rect.colliderect(plat.rect):
+                continue
+
+            if self.vx > 0:
+                # Moving right, hit left side
+                self.rect.right = plat.rect.left
+            elif self.vx < 0:
+                # Moving left, hit right side
+                self.rect.left = plat.rect.right
+
+    def handle_horizontal_bounds(self):
+        """
+        Keep player inside level bounds (0 ~ LEVEL_WIDTH)
+        """
         if self.rect.left < 0:
             self.rect.left = 0
-        if self.rect.right > WIDTH:
-            self.rect.right = WIDTH
+        if self.rect.right > LEVEL_WIDTH:
+            self.rect.right = LEVEL_WIDTH
 
-    def draw(self,screen):
-        pygame.draw.rect(screen,BLUE,self.rect)
+    def update(self, platform_list):
+        """
+        Update player each frame
+        """
+        self.handle_input()
+        self.apply_gravity()
+        self.move_and_collide(platform_list)
+        self.handle_horizontal_bounds()
 
-running =True
-player = Player(100,150,50,70)
+    def draw(self, surface, offset_x):
+        """
+        Draw player using camera offset
+        """
+        draw_rect = self.rect.move(-offset_x, 0)
+        pygame.draw.rect(surface, BLUE, draw_rect)
 
+# Scene setup
+
+platforms = []
+goal = None
+
+def build_level():
+    global platforms, goal
+    platforms = []
+
+    # ground
+    ground = Platform(0, HEIGHT - 40, LEVEL_WIDTH, 40)
+    platforms.append(ground)
+
+    # normal platform
+    platforms.append(Platform(300, 350, 300, 30))
+    platforms.append(Platform(800, 420, 200, 20))
+    platforms.append(Platform(1200, 380, 300, 20))
+    platforms.append(Platform(1700, 320, 300, 20))
+    platforms.append(Platform(2200, 280, 300, 20))
+
+    # Some breakable bricks above the ground
+    platforms.append(BreakableBlock(600, 300, 30, 30))
+    platforms.append(BreakableBlock(700, 300, 30, 30))
+    platforms.append(BreakableBlock(800, 300, 30, 30))
+
+    # final
+    goal_x = LEVEL_WIDTH - 80
+    goal_y = HEIGHT - 80
+    goal = Goal(goal_x, goal_y, 40, 40)
+
+# Build level first
+build_level()
+
+# Then create player and other states
+player = Player(100, 150, 50, 70)
+
+game_state = "PLAYING"
+
+camera_offset_x = 0
+
+SCROLL_AREA = 200
+
+font = pygame.font.SysFont(None, 36)
+
+
+def update_camera(player_rect, offset_x):
+    """
+    Update camera offset based on player position so that the player
+    stays roughly within a scroll area of the screen.
+    """
+
+    # Player's on-screen position = world position - offset_x
+    player_screen_x = player_rect.centerx - offset_x
+
+    # Scroll right if player near right edge and not at end of level
+    if player_screen_x > WIDTH - SCROLL_AREA:
+        offset_x += player_screen_x - (WIDTH - SCROLL_AREA)
+
+    # Scroll left if player near left edge and offset_x > 0
+    if player_screen_x < SCROLL_AREA:
+        offset_x -= SCROLL_AREA - player_screen_x
+
+    # Clamp offset between [0, LEVEL_WIDTH - WIDTH]
+    offset_x = max(0, min(offset_x, LEVEL_WIDTH - WIDTH))
+
+    return offset_x
+
+
+def draw_scene():
+    """
+    Draw the whole scene:
+    """
+    screen.fill(white)
+
+    # Draw platforms
+    for plat in platforms:
+        plat.draw(screen, camera_offset_x)
+
+    # Draw goal
+    goal.draw(screen, camera_offset_x)
+
+    # Draw player
+    player.draw(screen, camera_offset_x)
+
+    if game_state == "LEVEL_COMPLETE":
+        text = font.render("Level Complete! Press ESC to quit.",
+                           True, (0, 0, 0))
+        screen.blit(text, (WIDTH // 2 - text.get_width() // 2, 50))
+
+    pygame.display.update()
+
+
+# Main game loop
+
+running = True
 while running:
     clock.tick(FPS)
 
-    for event in pygame.event.get(): 
+    for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-            break
 
-    player.update(platforms)  
-    screen.fill(white)
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_ESCAPE]:
+        running = False
 
-    # Draw platform
-    for plat in platforms:
-        pygame.draw.rect(screen, GREY, plat)
+    if game_state == "PLAYING":
+        player.update(platforms)
 
-    player.draw(screen)
-    pygame.display.update()
+        camera_offset_x = update_camera(player.rect, camera_offset_x)
+
+        if player.rect.colliderect(goal.rect):
+            game_state = "LEVEL_COMPLETE"
+
+    draw_scene()
 
 pygame.quit()
