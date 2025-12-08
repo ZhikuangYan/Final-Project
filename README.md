@@ -51,7 +51,7 @@ The player can move, jump, collect coins, break blocks, avoid enemies, and reach
 
 # 🎮 Controls
 
-| 按键        | 功能           |
+| Button        | fearures           |
 | --------- | ------------ |
 | **A / D** | Move left / right      |
 | **SPACE** | jump           |
@@ -98,7 +98,7 @@ Levels are defined by `.txt` files:
 ############################
 ```
 
-| 字符  | 功能           |
+| Character  | features           |
 | --- | ------------ |
 | `#` | Grass |
 | `P` | Platform |
