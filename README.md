@@ -1,6 +1,6 @@
 # 🎮 2D Platformer Game
 
-*A simple platform game built with Python & Pygame.*
+*Final project for Software Carpentry: A simple platform game built with Python & Pygame.*
 
 ---
 
