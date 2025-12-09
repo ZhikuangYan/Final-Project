@@ -51,7 +51,7 @@ PLAYER_SPEED_X = 5
 
 # --- Pygame init ---
 pygame.init()
-pygame.display.set_caption("2D platform game")
+pygame.display.set_caption("2D platformer game")
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
 
