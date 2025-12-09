@@ -37,7 +37,6 @@ LEVEL_WIDTH = 0
 PLAYER_MAX_HEALTH = 3           # player max HP
 PLAYER_INVINCIBLE_FRAMES = 60   # invincibility frames (1s)
 
-# 关卡内的全局状态
 coin_count = 0          # coins collected
 TOTAL_COINS = 0         # total coins in level
 
