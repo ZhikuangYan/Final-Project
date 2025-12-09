@@ -121,3 +121,11 @@ python main.py
 ```
 
 ---
+## Assets Attribution
+Game assets are sourced from:
+
+- Tech With Tim — Python Platformer (code structure inspiration)  
+  https://github.com/techwithtim/Python-Platformer  
+
+- 小苏造水（Xiaosuzaoshui） — Pixel Art Packs  
+  https://xiaosuzaoshui.itch.io/pixel-art  
