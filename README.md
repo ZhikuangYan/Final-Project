@@ -1,6 +1,6 @@
 # 🎮 2D Platformer Game
 
-*Final project for Software Carpentry: A simple platform game built with Python & Pygame.*
+*Final project for Software Carpentry: A simple platformer game built with Python & Pygame.*
 
 This is a 2D platformer game built with **Python + Pygame**.
 The player can move, jump, collect coins, break blocks, avoid enemies, and reach the goal to complete the level.
