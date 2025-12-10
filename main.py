@@ -216,7 +216,7 @@ ENEMY_BASE = "idle"
 def get_background(name):
     """
     load and tile background image.
-    retrun：[(x, y), ...], image
+    retrun: [(x, y), ...], image
     """
     image = pygame.image.load(join(ASSET_DIR, "Background", name)).convert()
     _, _, w, h = image.get_rect()
