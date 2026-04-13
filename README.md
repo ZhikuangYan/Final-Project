@@ -120,6 +120,9 @@ run：
 python main.py
 ```
 
+# 🏁 DEMO
+<img width="1504" height="898" alt="image" src="https://github.com/user-attachments/assets/95b636e5-a10e-46e7-ac4c-5261de6f95a0" />
+
 ---
 ## Assets Attribution
 Game assets are sourced from:
