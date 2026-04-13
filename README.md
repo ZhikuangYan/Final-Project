@@ -121,11 +121,6 @@ python main.py
 ```
 
 ---
-
-# 🏁 DEMO
-![图片1](https://github.com/user-attachments/assets/ae2b68cb-fab1-4642-8464-fe783468c57b)
-
----
 ## Assets Attribution
 Game assets are sourced from:
 
