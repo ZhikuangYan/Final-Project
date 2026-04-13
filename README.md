@@ -120,8 +120,10 @@ run：
 python main.py
 ```
 
+---
+
 # 🏁 DEMO
-<img width="1504" height="898" alt="image" src="https://github.com/user-attachments/assets/95b636e5-a10e-46e7-ac4c-5261de6f95a0" />
+![图片1](https://github.com/user-attachments/assets/ae2b68cb-fab1-4642-8464-fe783468c57b)
 
 ---
 ## Assets Attribution
